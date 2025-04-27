@@ -10,3 +10,4 @@ I'm too lazy to write up docs rn so for now just check out the [example](./examp
 
 # TODO
 - Find out how to get paramaters.
+- Find out how the auto-complete works.
