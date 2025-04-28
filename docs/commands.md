@@ -6,7 +6,7 @@ After getting that you'll need to create the commmands and groups then use the `
 # Initializing
 To setup ConsoleExt you'll first need to run the `ConsoleExt::Init` fuction with a messageInteraface and the plugin handle.
 ```cpp
-OBSEMessagingInterface* msgInterface = (OBSEMessagingInterface*)obse->QueryInterface(kInterface_Messaging);
+OBSEMessagingInterface* msgInterface = (OBSEMessagingInterface*)obse->QueryInterface(kInterface_Messaging);;
 PluginHandle handle = obse->GetPluginHandle();
 
 ConsoleExt::Init(handle, msgInterface);
@@ -21,9 +21,9 @@ if (msg->type == ConsoleExt::EventType::Load)
 Then to create the commands you'll need to create a `ConsoleExt::Command` template that'll be sent to the plugin and copied.
 ```cpp
 // .. this is outside of the function CreateCommands
-void ExampleFunction(std::vector<char*> args) {
-	for (char* arg : args)
-		ConsoleExt::Print("%s", arg);
+void ExampleFunction(int argc, char** argv) {
+	for (int i = 0; i < argc; arg++)
+			ConsoleExt::Print("%s", argv[i]);
 
 	ConsoleExt::Print("Example function ran!");
 }
@@ -62,12 +62,13 @@ ConsoleExt::UpdateCommand(&cmd);
 If you want to create your own group so in the help message it splits off from other commands you'll need to do this.
 ```cpp
 // .. this is outside of the function CreateCommands
-void ExampleFunction(std::vector<char*> args) {
-	for (char* arg : args)
-		ConsoleExt::Print("%s", arg);
+void ExampleFunction(int argc, char** argv) {
+	for (int i = 0; i < argc; arg++)
+			ConsoleExt::Print("%s", argv[i]);
 
 	ConsoleExt::Print("Example function ran!");
 }
+
 // ... this is inside of the function CreateCommands for reference above.
 ConsoleExt::Group group;
 group.name = "Example Group";
@@ -86,12 +87,13 @@ ConsoleExt::CreateCommand(&cmd);
 
 ## Full example
 ```cpp
-void ExampleFunction(std::vector<char*> args) {
-	for (char* arg : args)
-		ConsoleExt::Print("%s", arg);
+void ExampleFunction(int argc, char** argv) {
+	for (int i = 0; i < argc; arg++)
+			ConsoleExt::Print("%s", argv[i]);
 
 	ConsoleExt::Print("Example function ran!");
 }
+
 
 void CreateCommands() {
 	// Create first command with no group

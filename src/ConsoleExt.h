@@ -16,9 +16,9 @@ inline namespace ConsoleExt {
 
 	typedef struct Command {
 		const char* name;
-		const char* short_name;
-		const char* help_string;
-		void(*execute_function)(std::vector<char*>) = nullptr;
+		const char* short_name = nullptr;
+		const char* help_string = nullptr;
+		void(*execute_function)(int, char**) = nullptr;
 
 		int id;
 		struct Group* group = nullptr;

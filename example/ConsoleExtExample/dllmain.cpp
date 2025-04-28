@@ -2,11 +2,10 @@
 #include "obse64_version.h"
 #include "ConsoleExt.h"
 
-void ExampleFunction(std::vector<char*> args) {
-	for (char* arg : args)
-		ConsoleExt::Print("%s", arg);
-
+void ExampleFunction(int argc, char** argv) {
 	ConsoleExt::Print("Example function ran!");
+	for (int i = 0; i < argc; i++)
+		printf("%s\n", argv[i]);
 }
 
 void CreateCommands() {

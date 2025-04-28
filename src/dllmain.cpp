@@ -18,6 +18,8 @@
 #pragma comment(lib, "libMinHook.x86.lib")
 #endif
 
+#define MAX_ARGS 64
+
 #define HELP_PATTERN				"48 89 5C 24 08 57 48 83 EC 20 48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 1D ? ? ? ? BF ? ? ? ?"
 #define CONSOLEPRINT_PATTERN		"48 89 4c 24 08 48 89 54 24 10 4c 89 44 24 18 4c 89 4c 24 20 48 83 ec 28 80 3d 41 ? ? ? ?"
 #define COMMANDNAMECHECK_PATTERN	"48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 33 ED 48 8D 1D ? ? ? ?"
@@ -84,10 +86,13 @@ void detourHelpCommand() {
 		ConsolePrint("----%s-------------------------", group->name);
 		ConsoleExt::Command* cmd = group->start;
 		while (cmd) {
-			if (cmd->short_name && cmd->help_string) ConsolePrint("%s (%s) -> %s", cmd->name, cmd->short_name, cmd->help_string);
-			else if (cmd->help_string) ConsolePrint("%s -> %s", cmd->name, cmd->help_string);
-			else if (cmd->short_name) ConsolePrint("%s (%s)", cmd->name, cmd->short_name);
-			else ConsolePrint("%s\n", cmd->name);
+			printf("%s: %p %p %p\n", cmd->name, cmd->name, cmd->short_name, cmd->help_string);
+			if (cmd->short_name == nullptr && cmd->help_string == nullptr)
+				ConsolePrint("%s", cmd->name);
+			else if (cmd->short_name != nullptr && cmd->help_string == nullptr)
+				ConsolePrint("%s (%s)", cmd->name, cmd->short_name);
+			else if (cmd->short_name != nullptr && cmd->help_string != nullptr)
+				ConsolePrint("%s (%s) -> %s", cmd->name, cmd->short_name, cmd->help_string);
 			cmd = cmd->next;
 		}
 	}
@@ -102,15 +107,20 @@ std::string lower_string(const char* str) {
 }
 
 
-std::vector<char*> parse_arguments(char* str) {
-	std::vector<char*> result;
-	if (!str) return result;
+
+char** split_string(char* str, size_t* outCount) {
+	if (!str || !outCount)
+		return nullptr;
+
+	const size_t maxTokens = MAX_ARGS;
+	char** result = (char**)malloc(sizeof(char*) * maxTokens);
+	size_t count = 0;
 
 	char* p = str;
 	bool skippedFirst = false;
 
-	while (*p) {
-		while (std::isspace(static_cast<unsigned char>(*p)))
+	while (*p && count < maxTokens) {
+		while (isspace(static_cast<unsigned char>(*p)))
 			++p;
 
 		if (*p == '\0')
@@ -123,13 +133,13 @@ std::vector<char*> parse_arguments(char* str) {
 			++p;
 			while (*p && *p != '"')
 				++p;
-
 			if (*p == '"')
 				*p++ = '\0';
 		}
 		else {
-			while (*p && !std::isspace(static_cast<unsigned char>(*p)))
+			while (*p && !isspace(static_cast<unsigned char>(*p)))
 				++p;
+
 			if (*p)
 				*p++ = '\0';
 		}
@@ -138,30 +148,41 @@ std::vector<char*> parse_arguments(char* str) {
 			skippedFirst = true;
 		}
 		else {
-			result.push_back(tokenStart);
+			result[count++] = tokenStart;
 		}
 	}
 
+	*outCount = count;
 	return result;
 }
 
-char __fastcall detourCommandFull(char** a1, char* cmdName) {
-	char* fullCmd = *a1;
 
-	//char* cmdArr[64];
-	std::vector<char*>args = parse_arguments(fullCmd);
+char __fastcall detourCommandFull(char** a1, char* cmdName) {
+	char* tmp_fullCmd = *a1;
+	
+	size_t fullCmd_size = strlen(tmp_fullCmd) + 1;
+	char* fullCmd = (char*)malloc(fullCmd_size);
+	memcpy(fullCmd, tmp_fullCmd, fullCmd_size);
+
+	size_t argCount = 0;
+	char** args = split_string(fullCmd, &argCount);
+
 
 	for (ConsoleExt::Group* group : ConsoleExt::groups) {
 		ConsoleExt::Command* cmd = group->start;
 		std::string lower_cmd = lower_string(cmdName);
 		while (cmd) {
 			std::string cmd_name = lower_string(cmd->name);
-			std::string cmd_short = lower_string(cmd->short_name);
+			std::string cmd_short = "";
+
+			if (cmd->short_name != nullptr)
+				cmd_short = lower_string(cmd->short_name);
 
 			if (lower_cmd.compare(cmd_name) == 0 || lower_cmd.compare(cmd_short) == 0) {
 				silentCount = 1;
-				if (cmd->execute_function)
-					cmd->execute_function(args);
+				if (cmd->execute_function) {
+					cmd->execute_function(argCount, args);
+				}
 				else
 					ConsolePrint("%s doesn't have a function.", cmd->name);
 				return 0;
@@ -170,6 +191,8 @@ char __fastcall detourCommandFull(char** a1, char* cmdName) {
 			cmd = cmd->next;
 		}
 	}
+	free(args);
+	free(fullCmd);
 
 	return pCommandFullFuncTarget(a1, cmdName);
 }
@@ -189,6 +212,7 @@ void HandleMessage(OBSEMessagingInterface::Message* msg) {
 		return;
 	}
 	if (!strcmp(packet->name, "print")) {
+		printf("error print?\n");
 		ConsolePrint("%s", packet->value);
 		return;
 	}
@@ -345,10 +369,12 @@ void HandleMessage(OBSEMessagingInterface::Message* msg) {
 	}
 }
 
-void VersionOutput(std::vector<char*> args) {
+void VersionOutput(int argc, char** argv) {
 	ConsolePrint("%s", CONSOLEEXT_VERSION);
-	for (char* arg : args)
-		printf("%s\n", arg);
+	for (int i = 0; i < argc; i++)
+		printf("%s\n", argv[i]);
+	//for (char* arg : args)
+		//printf("%s\n", arg);
 }
 
 void LoadPlugin() {
