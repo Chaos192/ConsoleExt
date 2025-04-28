@@ -21,8 +21,11 @@ if (msg->type == ConsoleExt::EventType::Load)
 Then to create the commands you'll need to create a `ConsoleExt::Command` template that'll be sent to the plugin and copied.
 ```cpp
 // .. this is outside of the function CreateCommands
-void ExampleFunction() {
-    ConsoleExt::Print("This is an example of printing.");
+void ExampleFunction(std::vector<char*> args) {
+	for (char* arg : args)
+		ConsoleExt::Print("%s", arg);
+
+	ConsoleExt::Print("Example function ran!");
 }
 
 // ... this is inside of the function CreateCommands for reference above.
@@ -38,9 +41,9 @@ ConsoleExt::Error err = ConsoleExt::CreateCommand(&cmd);
 if (err != ConsoleExt::Error::None) {
     printf("[!] failed to create command\n");
     if (err == ConsoleExt::Error::NoClient)
-	printf("[!] no client\n");
+		printf("[!] no client\n");
     else if (err == ConsoleExt::Error::NoSender)
-	printf("[!] no sender\n");
+		printf("[!] no sender\n");
     return;
 }
 ```
@@ -59,10 +62,12 @@ ConsoleExt::UpdateCommand(&cmd);
 If you want to create your own group so in the help message it splits off from other commands you'll need to do this.
 ```cpp
 // .. this is outside of the function CreateCommands
-void ExampleFunction() {
-    ConsoleExt::Print("This is an example of printing.");
-}
+void ExampleFunction(std::vector<char*> args) {
+	for (char* arg : args)
+		ConsoleExt::Print("%s", arg);
 
+	ConsoleExt::Print("Example function ran!");
+}
 // ... this is inside of the function CreateCommands for reference above.
 ConsoleExt::Group group;
 group.name = "Example Group";
@@ -81,7 +86,10 @@ ConsoleExt::CreateCommand(&cmd);
 
 ## Full example
 ```cpp
-void ExampleFunction() {
+void ExampleFunction(std::vector<char*> args) {
+	for (char* arg : args)
+		ConsoleExt::Print("%s", arg);
+
 	ConsoleExt::Print("Example function ran!");
 }
 
@@ -94,23 +102,23 @@ void CreateCommands() {
 	cmd.help_string = "This is an example help string.";
 	cmd.execute_function = ExampleFunction;
 
-	// Possible errors to look out for.
+    // Possible errors to look out for.
 	ConsoleExt::Error err = ConsoleExt::CreateCommand(&cmd);
     
-    	if (err != ConsoleExt::Error::None) {
+	if (err != ConsoleExt::Error::None) {
 		printf("[!] failed to create command\n");
 		if (err == ConsoleExt::Error::NoClient)
 			printf("[!] no client\n");
 		else if (err == ConsoleExt::Error::NoSender)
 			printf("[!] no sender\n");
-        	return;
+		return;
 	}
 
-    	// Update the name
-    	cmd.name = "update_example";
-    	ConsoleExt::UpdateCommand(&cmd);
+    // Update the name
+    cmd.name = "update_example";
+    ConsoleExt::UpdateCommand(&cmd);
 
-    	// Create command and group
+    // Create command and group
 	ConsoleExt::Group group;
 	group.name = "Example Group";
 
@@ -124,7 +132,7 @@ void CreateCommands() {
 }
 
 void MessageHandler(OBSEMessagingInterface::Message* msg) {
-	// Handle the EventType::Load message.
+    // Handle the EventType::Load message.
 	if (msg->type == ConsoleExt::EventType::Load)
 		CreateCommands();
 }

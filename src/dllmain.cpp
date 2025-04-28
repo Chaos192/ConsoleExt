@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <cctype>
 
 #include "PluginAPI.h"
 #include "ConsoleExt.h"
@@ -17,23 +18,24 @@
 #pragma comment(lib, "libMinHook.x86.lib")
 #endif
 
-#define HELP_PATTERN		 "48 89 5C 24 08 57 48 83 EC 20 48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 1D ? ? ? ? BF ? ? ? ?"
-#define CONSOLEPRINT_PATTERN "48 89 4c 24 08 48 89 54 24 10 4c 89 44 24 18 4c 89 4c 24 20 48 83 ec 28 80 3d 41 ? ? ? ?"
-#define COMMAND_PATTERN		 "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 33 ED 48 8D 1D ? ? ? ?"
+#define HELP_PATTERN				"48 89 5C 24 08 57 48 83 EC 20 48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 1D ? ? ? ? BF ? ? ? ?"
+#define CONSOLEPRINT_PATTERN		"48 89 4c 24 08 48 89 54 24 10 4c 89 44 24 18 4c 89 4c 24 20 48 83 ec 28 80 3d 41 ? ? ? ?"
+#define COMMANDNAMECHECK_PATTERN	"48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 48 89 7C 24 20 41 56 48 83 EC 20 33 ED 48 8D 1D ? ? ? ?"
+#define FULLCHECK_PATTERN			"40 53 56 41 55 48 83 EC 40 48 8B DA 4C 8B E9 48 C7 C6 FF FF FF FF 48 FF C6 80 3C 32 00 75 F7"
 
 uintptr_t base = 0;
 uintptr_t _console_print = 0;
 uintptr_t _init_commands = 0;
-uintptr_t _command_func = 0;
+uintptr_t _command_full_check = 0;
 
 OBSEInterface* obse = nullptr;
 PluginHandle plugin_handle;
 
 int silentCount = 0;
 
-typedef char(__fastcall* CommandFunc)(char* cmd);
-CommandFunc pCommandFunc = nullptr;
-CommandFunc pCommandFuncTarget;
+typedef char(__fastcall* CommandFullFunc)(void* a1, char* a2);
+CommandFullFunc pCommandFullFunc = nullptr;
+CommandFullFunc pCommandFullFuncTarget;
 
 typedef void(*HelpCommand)();
 HelpCommand pHelpCommand = nullptr;
@@ -93,14 +95,62 @@ void detourHelpCommand() {
 
 std::string lower_string(const char* str) {
 	std::string result = str;
-
 	std::transform(result.begin(), result.end(), result.begin(),
 		[](unsigned char c) { return std::tolower(c); });
 
 	return result;
 }
 
-char __fastcall detourCommandFunc(char* cmdName) {
+
+std::vector<char*> parse_arguments(char* str) {
+	std::vector<char*> result;
+	if (!str) return result;
+
+	char* p = str;
+	bool skippedFirst = false;
+
+	while (*p) {
+		while (std::isspace(static_cast<unsigned char>(*p)))
+			++p;
+
+		if (*p == '\0')
+			break;
+
+		char* tokenStart = p;
+
+		if (*p == '"') {
+			++tokenStart;
+			++p;
+			while (*p && *p != '"')
+				++p;
+
+			if (*p == '"')
+				*p++ = '\0';
+		}
+		else {
+			while (*p && !std::isspace(static_cast<unsigned char>(*p)))
+				++p;
+			if (*p)
+				*p++ = '\0';
+		}
+
+		if (!skippedFirst) {
+			skippedFirst = true;
+		}
+		else {
+			result.push_back(tokenStart);
+		}
+	}
+
+	return result;
+}
+
+char __fastcall detourCommandFull(char** a1, char* cmdName) {
+	char* fullCmd = *a1;
+
+	//char* cmdArr[64];
+	std::vector<char*>args = parse_arguments(fullCmd);
+
 	for (ConsoleExt::Group* group : ConsoleExt::groups) {
 		ConsoleExt::Command* cmd = group->start;
 		std::string lower_cmd = lower_string(cmdName);
@@ -110,9 +160,8 @@ char __fastcall detourCommandFunc(char* cmdName) {
 
 			if (lower_cmd.compare(cmd_name) == 0 || lower_cmd.compare(cmd_short) == 0) {
 				silentCount = 1;
-				if (cmd->execute_function) {
-					cmd->execute_function();
-				}
+				if (cmd->execute_function)
+					cmd->execute_function(args);
 				else
 					ConsolePrint("%s doesn't have a function.", cmd->name);
 				return 0;
@@ -122,9 +171,8 @@ char __fastcall detourCommandFunc(char* cmdName) {
 		}
 	}
 
-	return pCommandFuncTarget(cmdName);
+	return pCommandFullFuncTarget(a1, cmdName);
 }
-
 
 void HandleMessage(OBSEMessagingInterface::Message* msg) {
 	if (msg->type != ConsoleExt::EventType::Event)
@@ -297,8 +345,10 @@ void HandleMessage(OBSEMessagingInterface::Message* msg) {
 	}
 }
 
-void VersionOutput() {
+void VersionOutput(std::vector<char*> args) {
 	ConsolePrint("%s", CONSOLEEXT_VERSION);
+	for (char* arg : args)
+		printf("%s\n", arg);
 }
 
 void LoadPlugin() {
@@ -360,13 +410,11 @@ extern "C" {
 		pHelpCommand = (HelpCommand)_init_commands;
 		printf("[*] hooking help function.\n");
 
-		if (MH_CreateHook(pHelpCommand, &detourHelpCommand, reinterpret_cast<LPVOID*>(&pHelpCommandTarget)) != MH_OK) {
+		if (MH_CreateHook(pHelpCommand, &detourHelpCommand, reinterpret_cast<LPVOID*>(&pHelpCommandTarget)) != MH_OK)
 			printf("[!] failed to hook help func\n");
-		}
 
-		if (MH_EnableHook(pCommandFunc) != MH_OK) {
+		if (MH_EnableHook(pHelpCommand) != MH_OK)
 			printf("[!] failed to enable hook\n");
-		}
 		else printf("[*] successfully hooked!\n");
 
 		printf("[*] helpFunc: %p\n", (void*)_init_commands);
@@ -376,31 +424,29 @@ extern "C" {
 		pConsolePrint = (ConsolePrint_t)_console_print;
 		printf("[*] hooking consoleprint function.\n");
 
-		if (MH_CreateHook(pConsolePrint, &detourConsolePrint, reinterpret_cast<LPVOID*>(&pConsolePrintTarget)) != MH_OK) {
+		if (MH_CreateHook(pConsolePrint, &detourConsolePrint, reinterpret_cast<LPVOID*>(&pConsolePrintTarget)) != MH_OK)
 			printf("[!] failed to hook consoleprint func\n");
-		}
 
-		if (MH_EnableHook(pCommandFunc) != MH_OK) {
+
+		if (MH_EnableHook(pConsolePrint) != MH_OK)
 			printf("[!] failed to enable hook\n");
-		}
+
 		else printf("[*] successfully hooked!\n");
 		printf("[*] consolePrint: %p\n", (void*)_console_print);
 
-		printf("[?] scanning for cmd function..\n");
-		_command_func = (uintptr_t)PatternScan((void*)base, COMMAND_PATTERN);
-		pCommandFunc = (CommandFunc)_command_func;
-		printf("[*] hooking command function.\n");
+		printf("[?] scanning for cmd full check function..\n");
+		_command_full_check = (uintptr_t)PatternScan((void*)base, FULLCHECK_PATTERN);
+		pCommandFullFunc = (CommandFullFunc)_command_full_check;
+		printf("[*] hooking command full check function.\n");
 
-		if (MH_CreateHook(pCommandFunc, &detourCommandFunc, reinterpret_cast<LPVOID*>(&pCommandFuncTarget)) != MH_OK) {
-			printf("[!] failed to hook command func\n");
-		}
+		if (MH_CreateHook(pCommandFullFunc, &detourCommandFull, reinterpret_cast<LPVOID*>(&pCommandFullFuncTarget)) != MH_OK)
+			printf("[!] failed to hook command full check func\n");
 
-		if (MH_EnableHook(pCommandFunc) != MH_OK) {
+		if (MH_EnableHook(pCommandFullFunc) != MH_OK)
 			printf("[!] failed to enable hook\n");
-		}
 		else printf("[*] successfully hooked!\n");
 
-		printf("[*] commandFunc: %p\n", (void*)_command_func);
+		printf("[*] cmdFullCheck: %p\n", (void*)_command_full_check);
 
 		OBSEMessagingInterface* msgInterface = (OBSEMessagingInterface*)obse->QueryInterface(kInterface_Messaging);
 		plugin_handle = obse->GetPluginHandle();

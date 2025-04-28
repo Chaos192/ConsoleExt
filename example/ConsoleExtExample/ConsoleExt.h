@@ -7,14 +7,18 @@
 
 #include "PluginAPI.h"
 
-#define CONSOLEEXT_VERSION "v1.0.0b"
+#define CONSOLEEXT_VERSION "v1.1.0b"
 
 inline namespace ConsoleExt {
+	typedef struct CommandParam {
+
+	};
+
 	typedef struct Command {
 		const char* name;
 		const char* short_name;
 		const char* help_string;
-		void(*execute_function)() = nullptr;
+		void(*execute_function)(std::vector<char*>) = nullptr;
 
 		int id;
 		struct Group* group = nullptr;
@@ -24,6 +28,7 @@ inline namespace ConsoleExt {
 
 	typedef struct Group {
 		const char* name;
+
 		int id;
 		struct Command* start = nullptr;
 		struct Command* end = nullptr;

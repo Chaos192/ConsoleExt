@@ -2,7 +2,10 @@
 #include "obse64_version.h"
 #include "ConsoleExt.h"
 
-void ExampleFunction() {
+void ExampleFunction(std::vector<char*> args) {
+	for (char* arg : args)
+		ConsoleExt::Print("%s", arg);
+
 	ConsoleExt::Print("Example function ran!");
 }
 
@@ -37,6 +40,17 @@ void CreateCommands() {
 
 	cmd1.name = "update_example1";
 	ConsoleExt::UpdateCommand(&cmd1);
+
+	ConsoleExt::Group group2;
+	group2.name = "Example Group 2";
+
+	ConsoleExt::Command cmd2;
+	cmd2.name = "example2";
+	cmd2.short_name = "ex2";
+	cmd2.group = &group2;
+
+	ConsoleExt::CreateGroup(&group2);
+	ConsoleExt::CreateCommand(&cmd2);
 }
 
 void MessageHandler(OBSEMessagingInterface::Message* msg) {
