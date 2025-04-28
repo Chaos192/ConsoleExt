@@ -49,7 +49,8 @@ if (err != ConsoleExt::Error::None) {
 ```
 
 Now in the help message you'll see something like this:
-[!cmd_help](./assets/cmd.png)
+
+![cmd_img](./assets/cmd.png)
 
 # Updating a command
 If you change anything from the cmd you made you'll notice that nothing changes when you try to run the command.
@@ -89,7 +90,8 @@ ConsoleExt::CreateCommand(&cmd);
 ```
 
 In the help message it'll now look like this with your mod's commands:
-[!group_img](./assets/group.PNG)
+
+![group_img](./assets/group.PNG)
 
 ## Full example
 ```cpp
@@ -158,4 +160,5 @@ extern "C" {
 ```
 
 After you'll be able to run your own commands like this:
-[!cmdrun_img](./assets/runcmd.png)
+
+![cmdrun_img](./assets/runcmd.png)
