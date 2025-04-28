@@ -81,6 +81,10 @@ ConsoleExt::CreateCommand(&cmd);
 
 ## Full example
 ```cpp
+void ExampleFunction() {
+	ConsoleExt::Print("Example function ran!");
+}
+
 void CreateCommands() {
 	// Create first command with no group
 	ConsoleExt::Command cmd;
