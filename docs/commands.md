@@ -90,7 +90,7 @@ void CreateCommands() {
 	cmd.help_string = "This is an example help string.";
 	cmd.execute_function = ExampleFunction;
 
-    // Possible errors to look out for.
+	// Possible errors to look out for.
 	ConsoleExt::Error err = ConsoleExt::CreateCommand(&cmd);
     
     	if (err != ConsoleExt::Error::None) {
@@ -102,11 +102,11 @@ void CreateCommands() {
         	return;
 	}
 
-    // Update the name
-    cmd.name = "update_example";
-    ConsoleExt::UpdateCommand(&cmd);
+    	// Update the name
+    	cmd.name = "update_example";
+    	ConsoleExt::UpdateCommand(&cmd);
 
-    // Create command and group
+    	// Create command and group
 	ConsoleExt::Group group;
 	group.name = "Example Group";
 
@@ -120,7 +120,7 @@ void CreateCommands() {
 }
 
 void MessageHandler(OBSEMessagingInterface::Message* msg) {
-    // Handle the EventType::Load message.
+	// Handle the EventType::Load message.
 	if (msg->type == ConsoleExt::EventType::Load)
 		CreateCommands();
 }
