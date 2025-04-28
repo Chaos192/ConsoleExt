@@ -86,6 +86,9 @@ cmd.group = &group;
 
 ConsoleExt::CreateGroup(&group);
 ConsoleExt::CreateCommand(&cmd);
+
+cmd.name = "update_example1";
+ConsoleExt::UpdateCommand(&cmd);
 ```
 
 In the help message it'll now look like this with your mod's commands:
