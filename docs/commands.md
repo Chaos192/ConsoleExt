@@ -79,9 +79,8 @@ group.name = "Example Group";
 
 ConsoleExt::Command cmd;
 
-cmd.name = "example";
-cmd.short_name = "ex";
-cmd.help_string = "This is an example help string.";
+cmd.name = "example1";
+cmd.short_name = "ex1";
 cmd.execute_function = ExampleFunction;
 cmd.group = &group;
 
