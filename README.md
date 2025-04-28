@@ -2,7 +2,8 @@
 An OBSE64 library that makes interacting with the console easier.
 
 # Usage
-I'm too lazy to write up docs rn so for now just check out the [example](./example) I made.
+- [Commands](./docs/commands.md)
+- [ExampleProject](./example)
 
 # Changelog
 - 1.0.0b:
