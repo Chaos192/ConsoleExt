@@ -93,13 +93,13 @@ void CreateCommands() {
     // Possible errors to look out for.
 	ConsoleExt::Error err = ConsoleExt::CreateCommand(&cmd);
     
-    if (err != ConsoleExt::Error::None) {
+    	if (err != ConsoleExt::Error::None) {
 		printf("[!] failed to create command\n");
 		if (err == ConsoleExt::Error::NoClient)
 			printf("[!] no client\n");
 		else if (err == ConsoleExt::Error::NoSender)
 			printf("[!] no sender\n");
-        return;
+        	return;
 	}
 
     // Update the name
