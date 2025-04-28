@@ -22,8 +22,8 @@ Then to create the commands you'll need to create a `ConsoleExt::Command` templa
 ```cpp
 // .. this is outside of the function CreateCommands
 void ExampleFunction(int argc, char** argv) {
-	for (int i = 0; i < argc; arg++)
-			ConsoleExt::Print("%s", argv[i]);
+	for (int i = 0; i < argc; i++)
+		ConsoleExt::Print("%s", argv[i]);
 
 	ConsoleExt::Print("Example function ran!");
 }
@@ -48,6 +48,9 @@ if (err != ConsoleExt::Error::None) {
 }
 ```
 
+Now in the help message you'll see something like this:
+[!cmd_help](./assets/cmd.png)
+
 # Updating a command
 If you change anything from the cmd you made you'll notice that nothing changes when you try to run the command.
 That's because it's just the template that the plugin copied from you to perserve values.
@@ -63,8 +66,8 @@ If you want to create your own group so in the help message it splits off from o
 ```cpp
 // .. this is outside of the function CreateCommands
 void ExampleFunction(int argc, char** argv) {
-	for (int i = 0; i < argc; arg++)
-			ConsoleExt::Print("%s", argv[i]);
+	for (int i = 0; i < argc; i++)
+		ConsoleExt::Print("%s", argv[i]);
 
 	ConsoleExt::Print("Example function ran!");
 }
@@ -85,15 +88,17 @@ ConsoleExt::CreateGroup(&group);
 ConsoleExt::CreateCommand(&cmd);
 ```
 
+In the help message it'll now look like this with your mod's commands:
+[!group_img](./assets/group.PNG)
+
 ## Full example
 ```cpp
 void ExampleFunction(int argc, char** argv) {
-	for (int i = 0; i < argc; arg++)
-			ConsoleExt::Print("%s", argv[i]);
+	for (int i = 0; i < argc; i++)
+		ConsoleExt::Print("%s", argv[i]);
 
 	ConsoleExt::Print("Example function ran!");
 }
-
 
 void CreateCommands() {
 	// Create first command with no group
@@ -151,3 +156,6 @@ extern "C" {
     }
 }
 ```
+
+After you'll be able to run your own commands like this:
+[!cmdrun_img](./assets/runcmd.png)
