@@ -6,7 +6,7 @@ After getting that you'll need to create the commmands and groups then use the `
 # Initializing
 To setup ConsoleExt you'll first need to run the `ConsoleExt::Init` fuction with a messageInteraface and the plugin handle.
 ```cpp
-OBSEMessagingInterface* msgInterface = (OBSEMessagingInterface*)obse->QueryInterface(kInterface_Messaging);;
+OBSEMessagingInterface* msgInterface = (OBSEMessagingInterface*)obse->QueryInterface(kInterface_Messaging);
 PluginHandle handle = obse->GetPluginHandle();
 
 ConsoleExt::Init(handle, msgInterface);
