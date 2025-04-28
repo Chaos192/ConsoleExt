@@ -38,9 +38,9 @@ ConsoleExt::Error err = ConsoleExt::CreateCommand(&cmd);
 if (err != ConsoleExt::Error::None) {
     printf("[!] failed to create command\n");
     if (err == ConsoleExt::Error::NoClient)
-		printf("[!] no client\n");
+	printf("[!] no client\n");
     else if (err == ConsoleExt::Error::NoSender)
-		printf("[!] no sender\n");
+	printf("[!] no sender\n");
     return;
 }
 ```
