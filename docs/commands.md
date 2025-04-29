@@ -52,6 +52,12 @@ Now in the help message you'll see something like this:
 
 ![cmd_img](./assets/cmd.png)
 
+# Running commands
+If you want to run a command then you'll need to use the `ConsoleExt::RunCommad` function like this:
+```cpp
+ConsoleExt::RunCommand("help");
+```
+
 # Updating a command
 If you change anything from the cmd you made you'll notice that nothing changes when you try to run the command.
 That's because it's just the template that the plugin copied from you to perserve values.

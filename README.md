@@ -6,6 +6,8 @@ An OBSE64 library that makes interacting with the console easier.
 - [ExampleProject](./example)
 
 # Changelog
+- 1.2.0b:
+    - Add run command function.
 - 1.1.0b:
     - Add command parameters.
 - 1.0.0b:

@@ -7,7 +7,7 @@
 
 #include "PluginAPI.h"
 
-#define CONSOLEEXT_VERSION "v1.1.0b"
+#define CONSOLEEXT_VERSION "v1.2.0b"
 
 inline namespace ConsoleExt {
 	typedef struct CommandParam {
@@ -116,6 +116,22 @@ inline namespace ConsoleExt {
 		Packet packet;
 
 		packet.name = "print";
+		packet.size = sizeof(buffer);
+		packet.value = buffer;
+
+		SendPacket(&packet);
+	}
+
+	void RunCommand(const char* fmt, ...) {
+		char buffer[2048];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buffer, sizeof(buffer), fmt, args);
+		va_end(args);
+
+		Packet packet;
+
+		packet.name = "cmd_execute";
 		packet.size = sizeof(buffer);
 		packet.value = buffer;
 

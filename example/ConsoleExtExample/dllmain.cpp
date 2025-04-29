@@ -3,9 +3,14 @@
 #include "ConsoleExt.h"
 
 void ExampleFunction(int argc, char** argv) {
-	ConsoleExt::Print("Example function ran!");
 	for (int i = 0; i < argc; i++)
-		printf("%s\n", argv[i]);
+		ConsoleExt::Print("%s", argv[i]);
+
+	ConsoleExt::Print("Example function ran!");
+}
+
+void Example2Function(int, char**) {
+	ConsoleExt::RunCommand("help");
 }
 
 void CreateCommands() {
@@ -46,6 +51,8 @@ void CreateCommands() {
 	ConsoleExt::Command cmd2;
 	cmd2.name = "example2";
 	cmd2.short_name = "ex2";
+	cmd2.help_string = "runs the help command.";
+	cmd2.execute_function = Example2Function;
 	cmd2.group = &group2;
 
 	ConsoleExt::CreateGroup(&group2);
