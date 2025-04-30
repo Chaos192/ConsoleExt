@@ -19,7 +19,6 @@
 #pragma comment(lib, "libMinHook.x86.lib")
 #endif
 
-#define MAX_ARGS 64
 
 #define HELP_PATTERN						"48 89 5C 24 08 57 48 83 EC 20 48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 1D ? ? ? ? BF ? ? ? ?"
 #define CONSOLEPRINT_PATTERN				"48 89 4c 24 08 48 89 54 24 10 4c 89 44 24 18 4c 89 4c 24 20 48 83 ec 28 80 3d 41 ? ? ? ?"
@@ -67,7 +66,6 @@ void ExecuteCommand(const char* cmd) {
 	if (tmp_cmd.length < 16)
 		memcpy(&tmp_cmd, cmd, len + 1);
 
-	tmp_cmd.length = len > 7 ? len : 7;
 	pExecuteCommand(0, 0, &tmp_cmd);
 
 	free(buf);
@@ -171,12 +169,16 @@ char** parse_arguments(char* str, size_t* outCount, char** cmdName) {
 }
 
 void __fastcall detourCommandExecute(__int64 a1, __int64 a2, Command_t* cmd) {
-	char* fullCmd = (char*)cmd;
+	char* fullCmd;
 	if (cmd->capacity >= 16)
-		fullCmd = cmd->buf;
+		fullCmd = _strdup(cmd->buf);
+	else
+		fullCmd = _strdup((char*)cmd);
 
 	printf("[*] logged cmd: %p, %i, %i\n", cmd, cmd->length, cmd->capacity);
 	printf("[*] cmd: %p, %s\n", fullCmd, fullCmd);
+
+
 	
 	ConsoleOutputFlag(1);
 	size_t argCount = 0;
@@ -199,6 +201,8 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, Command_t* cmd) {
 				else
 					ConsolePrint("%s doesn't have a function.", cmd->name);
 				free(args);
+				free(fullCmd);
+
 				ConsoleOutputFlag(0);
 				return;
 			}
@@ -208,6 +212,7 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, Command_t* cmd) {
 	}
 
 	free(args);
+	free(fullCmd);
 	ConsoleOutputFlag(0);
 
 	pExecuteCommandTarget(a1, a2, cmd);
