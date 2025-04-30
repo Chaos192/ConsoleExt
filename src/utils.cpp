@@ -26,7 +26,7 @@ std::uint8_t* PatternScan(void* module, const char* signature, uintptr_t offset 
 
     auto sizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
     auto patternBytes = pattern_to_byte(signature);
-    auto scanBytes = reinterpret_cast<std::uint8_t*>(offset == 0 ? module : (void*)offset);
+    auto scanBytes = offset == 0 ? reinterpret_cast<std::uint8_t*>(module) : (uint8_t*)offset;
 
     auto s = patternBytes.size();
     auto d = patternBytes.data();
