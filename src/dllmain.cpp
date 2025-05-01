@@ -25,10 +25,6 @@ typedef void(__fastcall* ExecuteCommand_t)(__int64, __int64, std::string);
 ExecuteCommand_t pExecuteCommand = nullptr;
 ExecuteCommand_t pExecuteCommandTarget;
 
-typedef void(*VoidFunction)();
-VoidFunction pHelpCommand = nullptr;
-VoidFunction pHelpCommandTarget;
-
 void ConsoleOutputFlag(uint8_t val) {
 	if (_console_print_flag == 0) {
 		if (_execute_cmd == 0)
@@ -61,6 +57,26 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 	size_t argCount = 0;
 	char* cmdName;
 	char** args = parse_arguments(fullCmd, &argCount, &cmdName);
+
+	if (!strcmp(cmdName, "help")) {
+		pExecuteCommandTarget(a1, a2, cmd);
+		ConsoleOutputFlag(1);
+		for (ConsoleExt::Group* group : ConsoleExt::groups) {
+			ConsolePrint("----%s-------------------------", group->name);
+			ConsoleExt::Command* cmd = group->start;
+			while (cmd) {
+				if (cmd->short_name == nullptr && cmd->help_string == nullptr)
+					ConsolePrint("%s", cmd->name);
+				else if (cmd->short_name != nullptr && cmd->help_string == nullptr)
+					ConsolePrint("%s (%s)", cmd->name, cmd->short_name);
+				else if (cmd->short_name != nullptr && cmd->help_string != nullptr)
+					ConsolePrint("%s (%s) -> %s", cmd->name, cmd->short_name, cmd->help_string);
+				cmd = cmd->next;
+			}
+		}
+		ConsoleOutputFlag(0);
+		return;
+	}
 
 	for (ConsoleExt::Group* group : ConsoleExt::groups) {
 		ConsoleExt::Command* cmd = group->start;
@@ -96,22 +112,10 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 	pExecuteCommandTarget(a1, a2, cmd);
 }
 
-void detourHelpCommand() {
-	pHelpCommandTarget();
-	for (ConsoleExt::Group* group : ConsoleExt::groups) {
-		ConsolePrint("----%s-------------------------", group->name);
-		ConsoleExt::Command* cmd = group->start;
-		while (cmd) {
-			if (cmd->short_name == nullptr && cmd->help_string == nullptr)
-				ConsolePrint("%s", cmd->name);
-			else if (cmd->short_name != nullptr && cmd->help_string == nullptr)
-				ConsolePrint("%s (%s)", cmd->name, cmd->short_name);
-			else if (cmd->short_name != nullptr && cmd->help_string != nullptr)
-				ConsolePrint("%s (%s) -> %s", cmd->name, cmd->short_name, cmd->help_string);
-			cmd = cmd->next;
-		}
-	}
-}
+//void detourHelpCommand() {
+	//pHelpCommandTarget();
+	
+//}
 
 void HandleMessage(OBSEMessagingInterface::Message* msg) {
 	if (msg->type != ConsoleExt::EventType::Event)
@@ -346,20 +350,6 @@ extern "C" {
 			return false;
 		}
 
-		printf("[?] scanning for help function..\n");
-		_init_commands = (uintptr_t)PatternScan((void*)base, HELP_PATTERN);
-		pHelpCommand = (VoidFunction)_init_commands;
-		printf("[*] hooking help function.\n");
-
-		if (MH_CreateHook(pHelpCommand, &detourHelpCommand, reinterpret_cast<LPVOID*>(&pHelpCommandTarget)) != MH_OK)
-			printf("[!] failed to hook help func\n");
-
-		if (MH_EnableHook(pHelpCommand) != MH_OK)
-			printf("[!] failed to enable hook\n");
-		else printf("[*] successfully hooked!\n");
-
-		printf("[*] helpFunc: %p\n", (void*)_init_commands);
-
 		printf("[?] scanning for consolePrint function..\n");
 		_console_print = (uintptr_t)PatternScan((void*)base, CONSOLEPRINT_PATTERN);
 		printf("[*] consolePrint: %p\n", (void*)_console_print);
@@ -377,10 +367,8 @@ extern "C" {
 			printf("[!] failed to enable hook\n");
 
 		else printf("[*] successfully hooked!\n");
-
-
 		printf("[*] cmdExecute: %p\n", (void*)_execute_cmd);
-		
+
 		OBSEMessagingInterface* msgInterface = (OBSEMessagingInterface*)obse->QueryInterface(kInterface_Messaging);
 		plugin_handle = obse->GetPluginHandle();
 
