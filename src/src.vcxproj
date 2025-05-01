@@ -164,6 +164,7 @@
     <ClInclude Include="..\include\obse64_version.h" />
     <ClInclude Include="..\include\PluginAPI.h" />
     <ClInclude Include="..\include\utils.h" />
+    <ClInclude Include="main.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

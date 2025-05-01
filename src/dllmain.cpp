@@ -2,10 +2,7 @@
 #include <Windows.h>
 #include <iostream>
 #include <vector>
-#include <string>
 #include <algorithm>
-#include <cctype>
-#include <limits>
 
 #include <PluginAPI.h>
 #include <obse64_version.h>
@@ -19,57 +16,18 @@
 #pragma comment(lib, "libMinHook.x86.lib")
 #endif
 
-
-#define HELP_PATTERN						"48 89 5C 24 08 57 48 83 EC 20 48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 1D ? ? ? ? BF ? ? ? ?"
-#define CONSOLEPRINT_PATTERN				"48 89 4c 24 08 48 89 54 24 10 4c 89 44 24 18 4c 89 4c 24 20 48 83 ec 28 80 3d 41 ? ? ? ?"
-#define EXECUTECMD_PATTERN					"48 89 5c 24 08 48 89 74 24 20 57 48 81 ec d0 00 00 00 48 8b 05 ? ? ? ? 48 33 c4 48 89 84 24 c8 00 00 00"
-#define PRINT_FLAG_PATTERN					"c6 05 ? ? ? ? 01"
-
-#define NEXT_POW2(x) (((x) | ((x) >> 1) | ((x) >> 2) | ((x) >> 4) | ((x) >> 8) | ((x) >> 16)) + 1)
-
-uintptr_t base = 0;
-uintptr_t _console_print = 0;
-uintptr_t _execute_cmd = 0;
-uintptr_t _init_commands = 0;
-uintptr_t _console_print_flag = 0;
+#include "main.h"
 
 OBSEInterface* obse = nullptr;
 PluginHandle plugin_handle;
 
-
-struct Command_t {
-	char* buf;        
-	uint64_t pad;       
-	uint64_t length;  
-	uint64_t capacity;
-};
-
-typedef void(__fastcall* ExecuteCommandFn)(__int64, __int64, Command_t*);
-ExecuteCommandFn pExecuteCommand = nullptr;
-ExecuteCommandFn pExecuteCommandTarget;
-
+typedef void(__fastcall* ExecuteCommand_t)(__int64, __int64, std::string);
+ExecuteCommand_t pExecuteCommand = nullptr;
+ExecuteCommand_t pExecuteCommandTarget;
 
 typedef void(*VoidFunction)();
 VoidFunction pHelpCommand = nullptr;
 VoidFunction pHelpCommandTarget;
-
-void ExecuteCommand(const char* cmd) {
-	size_t len = strlen(cmd);
-	char* buf = _strdup(cmd);
-
-	Command_t tmp_cmd;
-
-	tmp_cmd.buf = buf;
-	tmp_cmd.length = len > 7 ? len : 7;
-	tmp_cmd.capacity = NEXT_POW2(tmp_cmd.length + 1) + 1;
-
-	if (tmp_cmd.length < 16)
-		memcpy(&tmp_cmd, cmd, len + 1);
-
-	pExecuteCommand(0, 0, &tmp_cmd);
-
-	free(buf);
-}
 
 void ConsoleOutputFlag(uint8_t val) {
 	if (_console_print_flag == 0) {
@@ -96,90 +54,9 @@ void ConsolePrint(const char* fmt, Args... args)
 	return func(fmt, args...);
 }
 
-std::string lower_string(const char* str) {
-	std::string result = str;
-	std::transform(result.begin(), result.end(), result.begin(),
-		[](unsigned char c) { return std::tolower(c); });
+void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
+	char* fullCmd = _strdup(cmd.c_str());
 
-	return result;
-}
-
-char** parse_arguments(char* str, size_t* outCount, char** cmdName) {
-	if (!str || !outCount)
-		return NULL;
-
-	size_t maxTokens = MAX_ARGS;
-	char** result = (char**)malloc(sizeof(char*) * maxTokens);
-	size_t count = 0;
-
-	char* p = str;
-	bool skippedFirst = false;
-
-	while (*p && count < maxTokens) {
-		while (*p && isspace((unsigned char)*p))
-			++p;
-
-		if (*p == '\0')
-			break;
-
-		char* tokenStart = NULL;
-
-		if (*p == '"') {
-			tokenStart = ++p;
-
-			char* read = p;
-			char* write = p;
-			while (*read) {
-				if (read[0] == '\\' && read[1] == '"') {
-					*write++ = '"';
-					read += 2;
-				}
-				else if (read[0] == '\\' && read[1] == '\\') {
-					*write++ = '\\';
-					read += 2;
-				}
-				else if (*read == '"') {
-					++read;
-					break;
-				}
-				else *write++ = *read++;
-			}
-			*write = '\0';
-			p = read;
-
-		}
-		else {
-			tokenStart = p;
-			while (*p && !isspace((unsigned char)*p))
-				++p;
-			if (*p)
-				*p++ = '\0';
-		}
-
-		if (!skippedFirst) {
-			*cmdName = tokenStart;
-			skippedFirst = true;
-		}
-		else
-			result[count++] = tokenStart;
-	}
-
-	*outCount = count;
-	return result;
-}
-
-void __fastcall detourCommandExecute(__int64 a1, __int64 a2, Command_t* cmd) {
-	char* fullCmd;
-	if (cmd->capacity >= 16)
-		fullCmd = _strdup(cmd->buf);
-	else
-		fullCmd = _strdup((char*)cmd);
-
-	printf("[*] logged cmd: %p, %i, %i\n", cmd, cmd->length, cmd->capacity);
-	printf("[*] cmd: %p, %s\n", fullCmd, fullCmd);
-
-
-	
 	ConsoleOutputFlag(1);
 	size_t argCount = 0;
 	char* cmdName;
@@ -213,6 +90,7 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, Command_t* cmd) {
 
 	free(args);
 	free(fullCmd);
+
 	ConsoleOutputFlag(0);
 
 	pExecuteCommandTarget(a1, a2, cmd);
@@ -250,7 +128,7 @@ void HandleMessage(OBSEMessagingInterface::Message* msg) {
 		return;
 	}
 	if (!strcmp(packet->name, "cmd_execute")) {
-		ExecuteCommand((const char*)packet->value);
+		pExecuteCommand(0, 0, std::string((char*)packet->value));
 		return;
 	}
 	if (!strcmp(packet->name, "print")) {
@@ -446,7 +324,7 @@ extern "C" {
 		"chonker",
 
 		OBSEPluginVersionData::kAddressIndependence_Signatures,
-		OBSEPluginVersionData::kStructureIndependence_InitialLayout,
+		OBSEPluginVersionData::kStructureIndependence_NoStructs,
 
 		{ RUNTIME_VERSION_0_411_140, 0 },
 
@@ -488,7 +366,7 @@ extern "C" {
 
 		printf("[?] scanning for cmd execute function..\n");
 		_execute_cmd = (uintptr_t)PatternScan((void*)base, EXECUTECMD_PATTERN);
-		pExecuteCommand = (ExecuteCommandFn)_execute_cmd;
+		pExecuteCommand = (ExecuteCommand_t)_execute_cmd;
 		printf("[*] hooking command execute function.\n");
 
 		if (MH_CreateHook(pExecuteCommand, &detourCommandExecute, reinterpret_cast<LPVOID*>(&pExecuteCommandTarget)) != MH_OK)

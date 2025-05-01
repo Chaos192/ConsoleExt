@@ -1,4 +1,78 @@
-#include "utils.h"
+#include <utils.h>
+#include <ConsoleExt.h>
+
+std::string lower_string(const char* str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
+    return result;
+}
+
+char** parse_arguments(char* str, size_t* outCount, char** cmdName) {
+	if (!str || !outCount)
+		return NULL;
+
+	size_t maxTokens = MAX_ARGS;
+	char** result = (char**)malloc(sizeof(char*) * maxTokens);
+	size_t count = 0;
+
+	char* p = str;
+	bool skippedFirst = false;
+
+	while (*p && count < maxTokens) {
+		while (*p && isspace((unsigned char)*p))
+			++p;
+
+		if (*p == '\0')
+			break;
+
+		char* tokenStart = NULL;
+
+		if (*p == '"') {
+			tokenStart = ++p;
+
+			char* read = p;
+			char* write = p;
+			while (*read) {
+				if (read[0] == '\\' && read[1] == '"') {
+					*write++ = '"';
+					read += 2;
+				}
+				else if (read[0] == '\\' && read[1] == '\\') {
+					*write++ = '\\';
+					read += 2;
+				}
+				else if (*read == '"') {
+					++read;
+					break;
+				}
+				else *write++ = *read++;
+			}
+			*write = '\0';
+			p = read;
+
+		}
+		else {
+			tokenStart = p;
+			while (*p && !isspace((unsigned char)*p))
+				++p;
+			if (*p)
+				*p++ = '\0';
+		}
+
+		if (!skippedFirst) {
+			*cmdName = tokenStart;
+			skippedFirst = true;
+		}
+		else
+			result[count++] = tokenStart;
+	}
+
+	*outCount = count;
+	return result;
+}
+
 
 std::uint8_t* PatternScan(void* module, const char* signature, uintptr_t offset = 0)
 {
