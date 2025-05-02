@@ -51,15 +51,15 @@ void ConsolePrint(const char* fmt, Args... args)
 }
 
 void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
-	char* fullCmd = _strdup(cmd.c_str());
-
 	ConsoleOutputFlag(1);
 	size_t argCount = 0;
 	char* cmdName;
-	char** args = parse_arguments(fullCmd, &argCount, &cmdName);
+	char* cmdCopy;
+	char** args = parse_arguments(cmd.c_str(), &argCount, &cmdName, &cmdCopy);
 
 	if (!strcmp(cmdName, "help")) {
 		pExecuteCommandTarget(a1, a2, cmd);
+
 		ConsoleOutputFlag(1);
 		for (ConsoleExt::Group* group : ConsoleExt::groups) {
 			ConsolePrint("----%s-------------------------", group->name);
@@ -75,6 +75,7 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 			}
 		}
 		ConsoleOutputFlag(0);
+
 		return;
 	}
 
@@ -94,8 +95,7 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 				else
 					ConsolePrint("%s doesn't have a function.", cmd->name);
 				free(args);
-				free(fullCmd);
-
+				free(cmdCopy);
 				ConsoleOutputFlag(0);
 				return;
 			}
@@ -105,17 +105,11 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 	}
 
 	free(args);
-	free(fullCmd);
-
+	free(cmdCopy);
 	ConsoleOutputFlag(0);
 
 	pExecuteCommandTarget(a1, a2, cmd);
 }
-
-//void detourHelpCommand() {
-	//pHelpCommandTarget();
-	
-//}
 
 void HandleMessage(OBSEMessagingInterface::Message* msg) {
 	if (msg->type != ConsoleExt::EventType::Event)

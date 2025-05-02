@@ -9,6 +9,4 @@
 static uintptr_t base = 0;
 static uintptr_t _console_print = 0;
 static uintptr_t _execute_cmd = 0;
-static uintptr_t _init_commands = 0;
 static uintptr_t _console_print_flag = 0;
-static uintptr_t _add_func = 0;

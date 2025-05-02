@@ -9,7 +9,7 @@ std::string lower_string(const char* str) {
     return result;
 }
 
-char** parse_arguments(char* str, size_t* outCount, char** cmdName) {
+char** parse_arguments(const char* str, size_t* outCount, char** cmdName, char** copy) {
 	if (!str || !outCount)
 		return NULL;
 
@@ -17,7 +17,11 @@ char** parse_arguments(char* str, size_t* outCount, char** cmdName) {
 	char** result = (char**)malloc(sizeof(char*) * maxTokens);
 	size_t count = 0;
 
-	char* p = str;
+	int strSize = strlen(str);
+	char* p = (char*)malloc(strSize + 1);
+	memcpy(p, str, strSize);
+	*copy = p;
+
 	bool skippedFirst = false;
 
 	while (*p && count < maxTokens) {
@@ -69,6 +73,7 @@ char** parse_arguments(char* str, size_t* outCount, char** cmdName) {
 			result[count++] = tokenStart;
 	}
 
+	//free(p);
 	*outCount = count;
 	return result;
 }
