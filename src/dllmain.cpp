@@ -21,7 +21,7 @@
 OBSEInterface* obse = nullptr;
 PluginHandle plugin_handle;
 
-typedef void(__fastcall* ExecuteCommand_t)(__int64, __int64, std::string);
+typedef void(__fastcall* ExecuteCommand_t)(__int64, __int64, const std::string&);
 ExecuteCommand_t pExecuteCommand = nullptr;
 ExecuteCommand_t pExecuteCommandTarget;
 
@@ -50,13 +50,13 @@ void ConsolePrint(const char* fmt, Args... args)
 	return func(fmt, args...);
 }
 
-void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
+void __fastcall detourCommandExecute(__int64 a1, __int64 a2, const std::string& cmd) {
 	ConsoleOutputFlag(1);
 	size_t argCount = 0;
 	char* cmdName;
 	char* cmdCopy;
 	char** args = parse_arguments(cmd.c_str(), &argCount, &cmdName, &cmdCopy);
-
+	
 	if (!strcmp(cmdName, "help")) {
 		pExecuteCommandTarget(a1, a2, cmd);
 
@@ -74,8 +74,10 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 				cmd = cmd->next;
 			}
 		}
-		ConsoleOutputFlag(0);
 
+		free(args);
+		free(cmdCopy);
+		ConsoleOutputFlag(0);
 		return;
 	}
 
@@ -106,7 +108,9 @@ void __fastcall detourCommandExecute(__int64 a1, __int64 a2, std::string cmd) {
 
 	free(args);
 	free(cmdCopy);
-	ConsoleOutputFlag(0);
+
+	//ConsoleOutputFlag(0);
+	// huh this^ was causing the player.additem crash???
 
 	pExecuteCommandTarget(a1, a2, cmd);
 }

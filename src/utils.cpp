@@ -17,8 +17,8 @@ char** parse_arguments(const char* str, size_t* outCount, char** cmdName, char**
 	char** result = (char**)malloc(sizeof(char*) * maxTokens);
 	size_t count = 0;
 
-	int strSize = strlen(str);
-	char* p = (char*)malloc(strSize + 1);
+	int strSize = strlen(str) + 1;
+	char* p = (char*)malloc(strSize);
 	memcpy(p, str, strSize);
 	*copy = p;
 
